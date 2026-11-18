@@ -14,12 +14,13 @@ so a synchronous call with a wait-cursor is enough for a course project.
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QStackedWidget,
-    QMessageBox, QApplication,
+    QMessageBox, QApplication, QLabel,
 )
 
 from gui.dashboard import DashboardPage
 from gui.map_widget import MapPage
 from gui.analytics import AnalyticsPage
+from gui.route_risk_demo import RouteRiskDemoPage
 
 from data.network_loader import load_cambridge_graph
 from data.scenario_generator import generate_scenario
@@ -42,34 +43,65 @@ class MainWindow(QMainWindow):
 
         # --- sidebar navigation ------------------------------------------------
         sidebar = QWidget()
+        sidebar.setObjectName("appSidebar")
         sidebar.setFixedWidth(180)
         sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(14, 20, 14, 16)
+        sidebar_layout.setSpacing(8)
         sidebar_layout.setAlignment(Qt.AlignTop)
+
+        brand = QLabel("AIDISPATCH")
+        brand.setObjectName("brandLabel")
+        brand_subtitle = QLabel("EMERGENCY ROUTE LAB")
+        brand_subtitle.setObjectName("brandSubtitle")
+        sidebar_layout.addWidget(brand)
+        sidebar_layout.addWidget(brand_subtitle)
+        sidebar_layout.addSpacing(18)
 
         self.dashboard_button = QPushButton("Dashboard")
         self.map_button = QPushButton("Interactive Map")
         self.analytics_button = QPushButton("Analytics")
-        for btn in (self.dashboard_button, self.map_button, self.analytics_button):
+        self.course_demo_button = QPushButton("Course Demo")
+        self.nav_buttons = (
+            self.dashboard_button, self.map_button, self.analytics_button,
+            self.course_demo_button,
+        )
+        for btn in self.nav_buttons:
             btn.setCheckable(True)
             btn.setMinimumHeight(40)
             sidebar_layout.addWidget(btn)
         sidebar_layout.addStretch()
+        author = QLabel("Altynbek Adil\nAI & ML")
+        author.setObjectName("authorLabel")
+        sidebar_layout.addWidget(author)
 
         self.dashboard_button.setChecked(True)
         self.dashboard_button.clicked.connect(lambda: self._switch_page(0))
         self.map_button.clicked.connect(lambda: self._switch_page(1))
         self.analytics_button.clicked.connect(lambda: self._switch_page(2))
+        self.course_demo_button.clicked.connect(lambda: self._switch_page(3))
 
         root_layout.addWidget(sidebar)
+        self.setStyleSheet("""
+            QWidget#appSidebar { background: #14212B; }
+            QLabel#brandLabel { color: #F4F7F8; font-size: 16px; font-weight: 800; letter-spacing: 1px; }
+            QLabel#brandSubtitle { color: #91A4B0; font-size: 8px; font-weight: 700; }
+            QLabel#authorLabel { color: #C7D2D8; font-size: 10px; padding-top: 10px; border-top: 1px solid #31434F; }
+            QWidget#appSidebar QPushButton { background: transparent; color: #D3DDE2; border: 0; border-radius: 7px; text-align: left; padding: 10px 11px; font-size: 11px; }
+            QWidget#appSidebar QPushButton:hover { background: #223542; }
+            QWidget#appSidebar QPushButton:checked { background: #167C70; color: white; font-weight: 700; }
+        """)
 
         # --- pages ---------------------------------------------------------
         self.pages = QStackedWidget()
         self.dashboard_page = DashboardPage()
         self.map_page = MapPage()
         self.analytics_page = AnalyticsPage()
+        self.course_demo_page = RouteRiskDemoPage()
         self.pages.addWidget(self.dashboard_page)
         self.pages.addWidget(self.map_page)
         self.pages.addWidget(self.analytics_page)
+        self.pages.addWidget(self.course_demo_page)
         root_layout.addWidget(self.pages)
 
         self.dashboard_page.generate_scenario_requested.connect(self.on_generate_scenario)
@@ -78,7 +110,7 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     def _switch_page(self, index: int):
         self.pages.setCurrentIndex(index)
-        for i, btn in enumerate((self.dashboard_button, self.map_button, self.analytics_button)):
+        for i, btn in enumerate(self.nav_buttons):
             btn.setChecked(i == index)
 
     # ------------------------------------------------------------------

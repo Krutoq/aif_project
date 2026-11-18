@@ -23,5 +23,6 @@ env/
 
 # Local reports and editor/OS files
 /reports/
+/.presentation-build/
 .DS_Store
 Thumbs.db

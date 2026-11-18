@@ -7,78 +7,18 @@ Python standard library. The desktop application remains available via
 
 import argparse
 
-from ai.road_risk import update_road_closure_probability
-from ai.route_mdp import decide_route
-from ai.routing import astar_route
-
-
-class DemoRoadGraph:
-    """Minimal graph interface consumed by the project's A* implementation."""
-
-    def __init__(self):
-        # Coordinates are close together so straight-line distance is an
-        # admissible heuristic for the illustrative road lengths below.
-        self.nodes = {
-            "AMB": {"y": 52.000, "x": 0.000},
-            "JCT": {"y": 52.000, "x": 0.001},
-            "CALL": {"y": 52.000, "x": 0.002},
-            "A": {"y": 52.001, "x": 0.000},
-            "B": {"y": 52.001, "x": 0.001},
-        }
-        self._edges = {}
-        self._adjacency = {node: set() for node in self.nodes}
-        for u, v, length in (
-            ("AMB", "JCT", 100.0),
-            ("JCT", "CALL", 100.0),  # sensor-risk road segment
-            ("AMB", "A", 120.0),
-            ("A", "B", 150.0),
-            ("B", "CALL", 150.0),
-        ):
-            self._edges[(u, v)] = {"length": length}
-            self._edges[(v, u)] = {"length": length}
-            self._adjacency[u].add(v)
-            self._adjacency[v].add(u)
-
-    def neighbors(self, node):
-        return iter(self._adjacency[node])
-
-    def get_edge_data(self, u, v):
-        return self._edges.get((u, v))
-
-    def number_of_nodes(self):
-        return len(self.nodes)
-
-
-PRIOR_BLOCKED = 0.20
-SENSOR_SENSITIVITY = 0.80
-SENSOR_FALSE_POSITIVE_RATE = 0.10
-RISK_EDGE = ("JCT", "CALL")
+from ai.route_demo import (
+    PRIOR_BLOCKED, SENSOR_SENSITIVITY, SENSOR_FALSE_POSITIVE_RATE,
+    RISK_EDGE, run_route_demo,
+)
 
 
 def run_scenario(sensor_alert: bool) -> None:
-    graph = DemoRoadGraph()
-    initial_route = astar_route(graph, "AMB", "CALL")
-    if not initial_route.path:
-        raise RuntimeError("The demo graph has no initial route to the call")
-
-    update = update_road_closure_probability(
-        prior_blocked=PRIOR_BLOCKED,
-        sensor_alert=sensor_alert,
-        sensitivity=SENSOR_SENSITIVITY,
-        false_positive_rate=SENSOR_FALSE_POSITIVE_RATE,
-    )
-    decision = decide_route(update.posterior_blocked)
-
-    if decision.action == "reroute":
-        blocked_edges = {RISK_EDGE, (RISK_EDGE[1], RISK_EDGE[0])}
-        selected_route = astar_route(
-            graph, "AMB", "CALL", blocked_edges=blocked_edges
-        )
-    else:
-        selected_route = initial_route
-
-    if not selected_route.path:
-        raise RuntimeError("The selected action left no route to the call")
+    result = run_route_demo(sensor_alert)
+    initial_route = result.initial_route
+    update = result.bayes
+    decision = result.mdp
+    selected_route = result.selected_route
 
     signal_name = "ALERT" if sensor_alert else "NO ALERT"
     print(f"\n{'=' * 64}\nSCENARIO: {signal_name}")

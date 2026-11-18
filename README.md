@@ -7,12 +7,12 @@ demo below is a deterministic, self-contained A* + Bayes + MDP scenario.
 
 ## Final Project course demonstration
 
-The course demonstration is a small, repeatable ambulance-route scenario that
-connects one algorithm from each required topic group: A* search, Bayesian
-reasoning about a noisy road-closure alert, and a one-step Markov Decision
-Process (MDP) that chooses whether to continue or reroute. The MDP action feeds
-back into A*: when rerouting is selected, the risk edge is excluded and A* finds
-the best available alternative.
+The Course Demo page in the desktop GUI and the terminal command both run the
+same small, repeatable ambulance-route scenario. It connects one algorithm
+from each required topic group: A* search, Bayesian reasoning about a noisy
+road-closure alert, and a one-step Markov Decision Process (MDP) that chooses
+whether to continue or reroute. When rerouting is selected, A* excludes the
+risk edge and finds the best available alternative.
 
 Run both examples from this directory:
 
@@ -61,13 +61,17 @@ ALERT: P(blocked | observation) = 66.7%
   Decision: REROUTE; route AMB -> A -> B -> CALL (420 m)
 ```
 
-For a short live demo, run `--signal clear` first, explain that the low
-posterior risk keeps the shortest route, then run `--signal alert` and show how
-the updated belief changes the MDP choice and causes A* to avoid the risk edge.
+For a short live demo, open **Course Demo**, run **No alert**, and explain why
+the low posterior risk keeps the shortest route. Switch to **Road alert** and
+show how the updated belief changes the MDP choice and causes A* to avoid the
+risk edge. The CLI remains available for a deterministic text trace.
 
 The original full desktop decision-support application remains available via
 `python app.py`; install `requirements.txt` and run `python setup_data.py` first
 for its Cambridge map workflow.
+
+The editable English presentation, including speaker notes and a two-minute
+live-demo outline, is in `presentation/Ambulance_Route_AI_Final_Project_v2.pptx`.
 
 ## What it does
 
