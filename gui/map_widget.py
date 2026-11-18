@@ -83,7 +83,10 @@ class MapPage(QWidget):
         graph                : road-network graph (to resolve node → lat/lon)
         """
         calls_payload = []
-        for call, priority in zip(scenario.calls, predicted_priorities):
+        unreachable_calls = {
+            r["call_index"] for r in routes if not r["route"].path
+        }
+        for call_index, (call, priority) in enumerate(zip(scenario.calls, predicted_priorities)):
             age = call.get("age")
             hr  = call.get("heart_rate")
             spo2 = call.get("spo2")
@@ -96,6 +99,8 @@ class MapPage(QWidget):
                 f"Age {age_str}  HR {hr_str}  SpO₂ {spo2_str}<br>"
                 f"Symptoms: {html.escape(str(call.get('symptoms', '')))}"
             )
+            if call_index in unreachable_calls:
+                popup += "<br>Route: no directed path in the road graph"
             calls_payload.append(dict(
                 lat=call["lat"], lon=call["lon"],
                 priority=priority, popup=popup,
@@ -118,13 +123,16 @@ class MapPage(QWidget):
         hospital_routes_latlon = []
         for r in routes:
             path_nodes = r["route"].path
+            if not path_nodes:
+                continue
             coords = [[graph.nodes[n]["y"], graph.nodes[n]["x"]] for n in path_nodes]
             ambulance_routes_latlon.append(coords)
 
             if r.get("hospital_route") is not None:
                 hosp_path = r["hospital_route"].path
-                hosp_coords = [[graph.nodes[n]["y"], graph.nodes[n]["x"]] for n in hosp_path]
-                hospital_routes_latlon.append(hosp_coords)
+                if hosp_path:
+                    hosp_coords = [[graph.nodes[n]["y"], graph.nodes[n]["x"]] for n in hosp_path]
+                    hospital_routes_latlon.append(hosp_coords)
 
         html_content = _build_map_html(
             center=CAMBRIDGE_CENTER,

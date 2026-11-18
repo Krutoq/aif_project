@@ -156,7 +156,22 @@ class MainWindow(QMainWindow):
                 self.scenario, self.result.predicted_priorities, self.result.routes, self.graph,
             )
             self.analytics_page.update_results(self.result)
-            self.dashboard_page.set_status("AI run complete. See the Interactive Map and Analytics pages.")
+            unreachable_count = sum(
+                not item["route"].path for item in self.result.routes
+            )
+            if unreachable_count:
+                self.map_page.title_label.setText(
+                    f"Interactive Map — {unreachable_count} route(s) unavailable"
+                )
+                status = (
+                    f"AI run complete. {unreachable_count} call(s) have no directed "
+                    "road path; the map marks them and assignment used a penalized "
+                    "distance estimate."
+                )
+            else:
+                self.map_page.title_label.setText("Interactive Map")
+                status = "AI run complete. See the Interactive Map and Analytics pages."
+            self.dashboard_page.set_status(status)
             self._switch_page(1)
         except Exception as exc:
             QMessageBox.critical(self, "AI run failed", str(exc))

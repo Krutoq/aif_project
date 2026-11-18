@@ -70,6 +70,12 @@ The original full desktop decision-support application remains available via
 `python app.py`; install `requirements.txt` and run `python setup_data.py` first
 for its Cambridge map workflow.
 
+If the directed Cambridge graph has no path for an ambulance-call pair, the
+assignment stage uses a penalized straight-line estimate to keep the matching
+finite. The map does not draw a route for that pair and marks the affected call.
+Cached triage models are retrained automatically when their scikit-learn
+version differs from the installed version.
+
 The editable English presentation, including speaker notes and a two-minute
 live-demo outline, is in `presentation/Ambulance_Route_AI_Final_Project_v2.pptx`.
 

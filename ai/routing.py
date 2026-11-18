@@ -161,10 +161,27 @@ def compare_routing_algorithms(G, source, target) -> dict:
 def estimate_distance_factory(G):
     """Returns a distance_fn(node_a, node_b) -> metres usable by
     ai/assignment.py's build_cost_matrix, backed by real A* routing on
-    graph G rather than straight-line distance.
+    graph G rather than straight-line distance. If the directed road graph
+    has no path between two nodes, use a deliberately high straight-line
+    estimate for assignment calculations. Route drawing still uses A* and
+    marks that pair unreachable instead of fabricating a road path.
     """
+    cache = {}
+
     def distance_fn(node_a, node_b):
-        return astar_route(G, node_a, node_b).distance_m
+        key = (node_a, node_b)
+        if key not in cache:
+            route = astar_route(G, node_a, node_b)
+            if route.path:
+                cache[key] = route.distance_m
+            else:
+                direct_m = haversine_distance_m(
+                    G.nodes[node_a]["y"], G.nodes[node_a]["x"],
+                    G.nodes[node_b]["y"], G.nodes[node_b]["x"],
+                )
+                cache[key] = max(100.0, direct_m * 3.0)
+        return cache[key]
+
     return distance_fn
 
 

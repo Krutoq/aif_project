@@ -41,12 +41,14 @@ MODEL PERSISTENCE
 """
 
 import os
+import warnings
 from dataclasses import dataclass
 from datetime import datetime
 
 import joblib
 import numpy as np
 import pandas as pd
+import sklearn
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.impute import SimpleImputer
@@ -200,6 +202,7 @@ class TriageClassifier:
             "baseline_model": self.baseline_model,
             "train_times":    train_times,          # plain dict[str, float] — safe
             "feature_columns": list(FEATURE_COLUMNS),  # plain list[str] — safe
+            "sklearn_version": sklearn.__version__,
             "saved_at":       datetime.now().isoformat(),
         }, path)
         print(f"[triage] Model saved to {path}")
@@ -210,7 +213,28 @@ class TriageClassifier:
         """
         if not os.path.exists(path):
             return None
-        data = joblib.load(path)
+
+        try:
+            with warnings.catch_warnings(record=True) as load_warnings:
+                warnings.simplefilter("always")
+                data = joblib.load(path)
+        except Exception as exc:
+            print(f"[triage] Cached model could not be loaded ({exc}); retraining.")
+            return None
+
+        has_version_warning = any(
+            warning.category.__name__ == "InconsistentVersionWarning"
+            for warning in load_warnings
+        )
+        saved_version = data.get("sklearn_version")
+        if has_version_warning or saved_version != sklearn.__version__:
+            saved_label = saved_version or "an older unversioned model format"
+            print(
+                f"[triage] Cached model uses scikit-learn {saved_label}; "
+                f"installed version is {sklearn.__version__}. Retraining."
+            )
+            return None
+
         self.model          = data["model"]
         self.baseline_model = data["baseline_model"]
         self._is_trained    = True
