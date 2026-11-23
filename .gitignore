@@ -1,28 +1,8 @@
-# Python bytecode and virtual environments
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .venv/
-venv/
-env/
-.conda/
-
-# Local configuration and credentials
-.env
-.env.*
-!.env.example
-
-# Local datasets, fitted models, and downloaded/generated data
-/data_files/*
-/cache/
-/models/
-*.pkl
-*.pickle
-*.joblib
-*.graphml
-*.csv
-
-# Local reports and editor/OS files
-/reports/
-/.presentation-build/
-.DS_Store
-Thumbs.db
+.streamlit/secrets.toml
+dist/
+build/
+.build/

@@ -1,158 +1,82 @@
-# AI Emergency Medical Dispatch Decision Support System
+# Mini Emergency Exit Planner
 
-A desktop prototype for emergency medical dispatch. The full application uses
-the Cambridge, UK road network and can load a local KTAS triage dataset. When
-that dataset is absent, it falls back to synthetic examples. The Final Project
-demo below is a deterministic, self-contained A* + Bayes + MDP scenario.
+A small educational Python application that connects three AI fundamentals in a closed loop:
 
-## Final Project course demonstration
+1. **A*** finds a shortest path through a four-directional grid.
+2. **Bayesian inference** updates the probability that a monitored corridor is blocked from one or two hypothetical sensor readings.
+3. **A one-step MDP policy** compares proceeding with detouring; a detour marks the monitored corridor blocked and runs A* again to Exit B.
 
-The Course Demo page in the desktop GUI and the terminal command both run the
-same small, repeatable ambulance-route scenario. It connects one algorithm
-from each required topic group: A* search, Bayesian reasoning about a noisy
-road-closure alert, and a one-step Markov Decision Process (MDP) that chooses
-whether to continue or reroute. When rerouting is selected, A* excludes the
-risk edge and finds the best available alternative.
+> **Safety:** this is a classroom simulation with invented map, sensor, and reward assumptions. It is not connected to real sensors or a verified building and must never guide a real evacuation.
 
-Run both examples from this directory:
+The supplied course handout allows a console-only implementation and calls deployment optional. This repository provides the planned Streamlit interface, automated tests, report, slide deck, and local/container deployment setup as an expanded deliverable.
 
-```bash
-python final_project_demo.py
+## Quick start
+
+Python 3.10+ is recommended.
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements-dev.txt
+python -m streamlit run app.py
 ```
 
-Or run only one sensor scenario:
+Open the local URL printed by Streamlit. The app works offline after its Python dependencies have been installed.
 
-```bash
-python final_project_demo.py --signal alert
-python final_project_demo.py --signal clear
+Console demonstration:
+
+```powershell
+python main.py --sensor alert
+python main.py --sensor clear
 ```
 
-On Windows, `run_final_project_demo.bat` starts both scenarios in a console.
+## One-command checks
 
-The demonstration uses only the Python standard library and does not download
-the Cambridge map, load patient data, or require the desktop GUI. It shows the
-input, important intermediate calculations, algorithm outputs, and a short
-interpretation. All sensor probabilities, transition probabilities, rewards,
-and toy road lengths are explicitly illustrative; they are not live traffic
-measurements or a real emergency-routing safety policy.
-
-### Algorithms and assumptions
-
-1. **A* search** — finds a shortest path by road length. Its straight-line
-   distance heuristic is admissible on the toy graph. `ai/routing.py` also
-   supports optional directed blocked-edge pairs so the demo can recompute a
-   route without mutating the original graph.
-2. **Bayesian inference** — uses prior closure probability 0.20, sensor
-   sensitivity 0.80, and false-positive rate 0.10. With an alert, the posterior
-   closure probability is 66.7%; without an alert it is 5.3%.
-3. **One-step MDP** — uses states Clear/Blocked, actions Continue/Reroute, a
-   stated transition table, illustrative rewards, discount 0.90, and next-state
-   values. It selects the action with the highest belief-weighted Bellman value.
-
-### Example result
-
-```text
-NO ALERT: P(blocked | observation) = 5.3%
-  Continue value = 6.98; reroute value = -11.85
-  Decision: CONTINUE; route AMB -> JCT -> CALL (200 m)
-
-ALERT: P(blocked | observation) = 66.7%
-  Continue value = -49.27; reroute value = -11.85
-  Decision: REROUTE; route AMB -> A -> B -> CALL (420 m)
+```powershell
+python -m pytest -q
 ```
 
-For a short live demo, open **Course Demo**, run **No alert**, and explain why
-the low posterior risk keeps the shortest route. Switch to **Road alert** and
-show how the updated belief changes the MDP choice and causes A* to avoid the
-risk edge. The CLI remains available for a deterministic text trace.
+The tests cover the expected 5.56% clear and 65.38% alert posteriors, Exit A/Exit B policy outcomes, a noisy sensor crossing the MDP boundary, sequential heat evidence, prior extremes, exact-boundary tie behavior, unreachable paths, and equal A*/BFS optimal path lengths. Benchmark timings vary by host; expanded-node counts and path lengths are the stable comparison.
 
-The original full desktop decision-support application remains available via
-`python app.py`; install `requirements.txt` and run `python setup_data.py` first
-for its Cambridge map workflow.
+## Assumptions and equations
 
-If the directed Cambridge graph has no path for an ambulance-call pair, the
-assignment stage uses a penalized straight-line estimate to keep the matching
-finite. The map does not draw a route for that pair and marks the affected call.
-Cached triage models are retrained automatically when their scikit-learn
-version differs from the installed version.
+The baseline is a 6×6 grid with start `(2, 0)`, Exit A `(2, 5)`, Exit B `(5, 5)`, three walls, and monitored corridor `(2, 3)`. Movement is four-directional at cost 1. The stress grid is 10×10. Coordinates are `(row, column)`.
 
-The editable English presentation, including speaker notes and a two-minute
-live-demo outline, is in `presentation/Ambulance_Route_AI_Final_Project_v2.pptx`.
+Default sensor assumptions: prior blockage 0.25; smoke true-positive rate 0.85; smoke false-positive rate 0.15. Optional heat readings are treated as conditionally independent given corridor state, with rates 0.80 and 0.20.
 
-## What it does
+Default rewards: proceed if clear +100; proceed if blocked −100; detour +40. Thus `EU(Proceed) = 100 − 200p`, `EU(Detour) = 40`, and the equality threshold is `p* = 0.30`. At a tie the implementation chooses DETOUR for safety. The UI risk slider changes the blocked-state reward and recalculates the threshold.
 
-1. **Triage** — Predicts patient priority (Critical / High / Medium / Low) from
-   age, vital signs and observations using a Random Forest classifier. It uses
-   the KTAS dataset when supplied locally and synthetic data otherwise.
-2. **Ambulance assignment** — Assigns available ambulances to calls to minimise
-   total response time via the Hungarian algorithm.
-3. **Routing** — Computes optimal ambulance routes on the real Cambridge road
-   network using A* (vs Dijkstra baseline).
-4. **Hospital recommendation** — Recommends the best hospital per patient using
-   a hard specialty-match constraint followed by distance/capacity scoring.
-5. **Analytics** — Confusion matrix, accuracy/F1/recall, response-time charts,
-   and algorithm comparisons all displayed on the Analytics page.
+## Interactive features
 
-## Setup (run once, requires internet)
+- Clear, Smoke Alert, and Noisy Sensor presets.
+- 6×6 baseline and 10×10 stress maps.
+- Optional wall editing on the baseline map.
+- Live prior, sensor-rate, observation, and risk sliders.
+- Optional sequential heat sensor.
+- Search trace, Bayesian calculation, MDP utilities, A*/BFS benchmark, and policy-boundary plot.
+- Tile-by-tile playback of the selected route.
 
-```bash
-pip install -r requirements.txt
-python setup_data.py
+## Deployment
+
+### Docker
+
+```powershell
+docker build -t mini-emergency-exit-planner .
+docker run --rm -p 8501:8501 mini-emergency-exit-planner
 ```
 
-This downloads and caches the Cambridge road network graph locally.
+Then open `http://localhost:8501`. For a hosted class demo, push this repository to a Git provider and configure a Streamlit-compatible host to install `requirements.txt` and run `streamlit run app.py`. No secrets or external services are required. Hosting is not automatically provisioned by this repository.
 
-**Note:** The Interactive Map page always requires an internet connection to load
-Leaflet JS/CSS and OpenStreetMap tiles.  Only the road-network graph used by the
-AI algorithms is cached locally.
+## Repository map
 
-## Running the app
+- `app.py`: Streamlit app and visualization.
+- `pipeline.py`: A* → Bayes → MDP → optional A* reroute.
+- `algorithms/`: independent algorithm modules.
+- `config.py`: labeled hypothetical inputs.
+- `main.py`: offline console demo and benchmark.
+- `tests/`: pytest coverage.
+- `docs/`: technical report, presentation, benchmark results, AI-use note, contribution template, and defense/demo script.
 
-```bash
-python app.py
-```
+## Defense/demo
 
-## Data
-
-`data_files/ktas_data.csv` is an optional local input for triage training. It is
-not included in this repository; without it, the application uses synthetic
-data. The fitted `triage_model.pkl`, downloaded Cambridge graph, and runtime
-caches are generated locally and are also excluded. Do not commit patient-level
-clinical data or models trained on it to a public repository.
-
-## Project structure
-
-```
-app.py                      Entry point
-setup_data.py               One-time network download
-data_files/
-    ktas_data.csv           Real KTAS triage dataset
-    cambridge_network.graphml  Cached after setup_data.py runs
-data/
-    medical_data.py         Real-data loader + synthetic fallback
-    scenario_generator.py   Emergency-call and ambulance placement
-    hospitals.py            Cambridge hospital definitions
-    ambulance_stations.py   Ambulance station definitions
-    network_loader.py       OSMnx graph loader / cache
-ai/
-    triage.py               Random Forest triage classifier
-    assignment.py           Hungarian algorithm assignment
-    routing.py              A* and Dijkstra routing
-    road_risk.py             Bayesian road-closure inference
-    route_mdp.py             One-step MDP route decision
-    hospital.py             Multi-criteria hospital recommendation
-    pipeline.py             Full pipeline orchestration
-final_project_demo.py       Course demo connecting Bayes, MDP, and A*
-gui/
-    main_window.py          Main window + page navigation
-    dashboard.py            Scenario controls and status
-    map_widget.py           Leaflet interactive map
-    analytics.py            Analytics charts and metrics
-utils/
-    metrics.py              Timing utilities
-```
-
-## Requirements
-
-- Python 3.12+
-- See `requirements.txt` for library versions
+Use `docs/demo_and_defense_script.md` for the 2–3 minute demo and likely Q&A. Replace the author placeholder in the presentation and contribution template. Review and understand all algorithm code before presenting; the AI-use note describes assistance accurately.
