@@ -1,3 +1,0 @@
-# AI usage declaration
-
-I declare that the core concept, system architecture, algorithm selection, and overall design of this project are entirely my own original work. Generative AI tools (such as ChatGPT / GitHub Copilot) were utilized strictly as a supplementary programming assistant. Specifically, AI was used to debug syntax and runtime errors, clarify library documentation, optimize existing functions, and generate minor boilerplate code. All AI-assisted code snippets were thoroughly reviewed, modified, tested, and integrated by me, and I take full responsibility for the final implementation and results.
