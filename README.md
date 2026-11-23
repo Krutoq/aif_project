@@ -75,8 +75,3 @@ Then open `http://localhost:8501`. For a hosted class demo, push this repository
 - `config.py`: labeled hypothetical inputs.
 - `main.py`: offline console demo and benchmark.
 - `tests/`: pytest coverage.
-- `docs/`: technical report, presentation, benchmark results, AI-use note, contribution template, and defense/demo script.
-
-## Defense/demo
-
-Use `docs/demo_and_defense_script.md` for the 2–3 minute demo and likely Q&A. Replace the author placeholder in the presentation and contribution template. Review and understand all algorithm code before presenting; the AI-use note describes assistance accurately.
